@@ -1,0 +1,16 @@
+unit models.dcheader;
+
+interface
+
+type
+  SizeAttribute = class(TCustomAttribute)
+  private
+    FValue: Integer;
+  public
+    constructor Create(AValue: Integer);
+    property Value: Integer read FValue;
+  end;
+
+implementation
+
+end.

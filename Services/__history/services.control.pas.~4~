@@ -1,0 +1,56 @@
+unit services.control;
+
+interface
+
+uses
+  System.SysUtils, models.types, services.counters;
+
+const
+  DEFAULT_CONTROL_SUFFIX = '01';
+  CONTROL_LENGTH = 19;
+
+type
+  TControlGenerator = class
+  private
+    FDate: TClarionDate;
+    FTime: TClarionTime;
+    FSuffix: string;
+  public
+    constructor Create(ADate: TClarionDate; ATime: TClarionTime;
+      const ASuffix: string = DEFAULT_CONTROL_SUFFIX);
+
+    function NewControl(var ABlock: TControlBlock): string;
+    class function TryParse(const AControl: string; out ADate: TClarionDate;
+    out ATime: TClarionTime; out ACounter: Integer; out ASuffix: string): Boolean; static;
+  end;
+
+implementation
+
+{ TControlGenerator }
+
+constructor TControlGenerator.Create(ADate: TClarionDate; ATime: TClarionTime;
+  const ASuffix: string);
+begin
+  inherited Create;
+  FDate := ADate;
+  ftime := ATime;
+  FSuffix := ASuffix;
+
+  Assert(Length(FSuffix) = 2, 'CONTROL suffix must be 2 charactes');
+  Assert((FDate >= 0) and (FDate <= 99999), 'FECEMIS out of 5-digit range');
+  Assert((FTime >= 0) and (FTime <= 9999999), 'CLARION time ot of 7-digit range');
+end;
+
+function TControlGenerator.NewControl(var ABlock: TControlBlock): string;
+begin
+
+end;
+
+class function TControlGenerator.TryParse(const AControl: string;
+  out ADate: TClarionDate; out ATime: TClarionTime; out ACounter: Integer;
+  out ASuffix: string): Boolean;
+begin
+
+end;
+
+end.

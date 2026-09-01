@@ -1,0 +1,25 @@
+unit models.igtfrecords;
+
+interface
+
+uses
+  attributes, models.types;
+
+type
+  [Table('igtfrecords')]
+  [UniqueIndex('KeyIgtf01', 'dcheaderCONTROL')]   // Confirmar
+  TIGTFRecord = class
+  public
+    [UniqueKey][NotNull][Size(19)] dcheaderCONTROL: string;
+    [Decimal(17, 2)] baseImponibleGeneral: TMonto;
+    [Size(10)] porcentajeImpuestoIGTF: string;
+    [Size(30)] DESCRIPCION: string;                 // 'Dolar'
+    [Decimal(17, 2)] IGTFEFECTIVOMONEDALOCAL: TMonto;
+    [Decimal(17, 2)] IGTFCHEQUEMONEDALOCAL: TMonto;
+    [Decimal(17, 2)] IGTFTARJETAMONEDALOCAL: TMonto;
+    [Decimal(17, 2)] IGTFOTROMETODOMONEDALOCAL: TMonto;
+  end;
+
+implementation
+
+end.

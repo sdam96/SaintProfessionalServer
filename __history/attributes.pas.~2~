@@ -1,0 +1,64 @@
+unit attributes;
+
+unit uDCAtributos;
+
+interface
+
+type
+  /// Longitud máxima en caracteres (varchar / char)
+  SizeAttribute = class(TCustomAttribute)
+  private
+    FValue: Integer;
+  public
+    constructor Create(AValue: Integer);
+    property Value: Integer read FValue;
+  end;
+
+  /// Precisión total y escala decimal (decimal(p,s))
+  DecimalAttribute = class(TCustomAttribute)
+  private
+    FPrecision, FScale: Integer;
+  public
+    constructor Create(APrecision, AScale: Integer);
+    property Precision: Integer read FPrecision;
+    property Scale: Integer read FScale;
+  end;
+
+  /// Cadena de longitud fija (char(n)), no varchar
+  FixedLengthAttribute = class(TCustomAttribute);
+
+  /// Valor por defecto declarado en la tabla
+  DefaultValueAttribute = class(TCustomAttribute)
+  private
+    FValue: string;
+  public
+    constructor Create(const AValue: string);
+    property Value: string read FValue;
+  end;
+
+  NotNullAttribute = class(TCustomAttribute);
+  PrimaryKeyAttribute = class(TCustomAttribute);
+  IndexedAttribute = class(TCustomAttribute);
+
+implementation
+
+constructor SizeAttribute.Create(AValue: Integer);
+begin
+  inherited Create;
+  FValue := AValue;
+end;
+
+constructor DecimalAttribute.Create(APrecision, AScale: Integer);
+begin
+  inherited Create;
+  FPrecision := APrecision;
+  FScale := AScale;
+end;
+
+constructor DefaultValueAttribute.Create(const AValue: string);
+begin
+  inherited Create;
+  FValue := AValue;
+end;
+
+end.

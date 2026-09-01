@@ -1,0 +1,42 @@
+unit models.cjdetall;
+
+interface
+
+uses
+  attributes, models.types;
+
+type
+  [Table('cjdetall')]
+  [UniqueIndex('KeyCja01', 'CONTROL')]   // Por confirmar.
+
+  TCJDetall = class
+  public
+    [UniqueKey][NotNull][Size(19)] CONTROL: string;
+    [Indexed][Size(10)] CODCAJA: string;        // 'DEMO' en el dump
+    [Indexed][Size(30)] NUMREF: string;
+
+    [Indexed] FECEMIS: TFechaInt;
+    [Size(10)] FECEMISS: string;                //
+    [Decimal(17, 2)] MONTOCOBRADO: TMonto;
+    TIPOCOBRO: TIndicador;                      //
+
+    [Size(20)] NUMCHETAR: string;
+    [Size(15)] CODBANCO: string;
+    [Size(15)] CODTAR: string;
+    [Size(15)] CODBANCODEP: string;
+    [Size(20)] REFERENDEP: string;
+    MARCADEP: TIndicador;
+    DEPOSITADO: TIndicador;
+    OTRAPLAZA: TIndicador;
+
+    HORA: THoraClarion;
+    [Indexed][Size(10)] TIPTRAN: string;        // 'FAC', 'DEVxFAC'
+    [Size(30)] NUMDOC: string;                  // '000011' sin sufijo
+    [Indexed][Size(25)] CODIGO: string;         // cliente
+    [Size(60)] DESCRIP1: string;                // 'Factura 000011'
+    ESTADOCAJA: TIndicador;
+  end;
+
+implementation
+
+end.

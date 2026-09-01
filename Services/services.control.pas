@@ -1,0 +1,78 @@
+unit services.control;
+
+interface
+
+uses
+  System.SysUtils, models.types, services.counters;
+
+const
+  DEFAULT_CONTROL_SUFFIX = '01';
+  CONTROL_LENGTH = 19;
+
+type
+  // Builds the CONTROL (header, cash) and FECHORA (line) identifiers.
+  // Both share the same layout, confirmed against all 11 snapshots:
+  //
+  //   LPAD(FECEMIS,5) + LPAD(CLARION_TIME,7) + LPAD(CONTADORCONTROL,5) + '01'
+  //   = exactly 19 characters.
+  //
+  // Example: 8242521637260000801 -> 82425 / 2163726 / 00008 / 01
+  //
+  // The '01' suffix is constant across all 30+ observed rows. Presumed to be
+  // a terminal or workstation id. NOT CONFIRMED.
+  TControlGenerator = class
+  private
+    FDate: TClarionDate;
+    FTime: TClarionTime;
+    FSuffix: string;
+  public
+    constructor Create(ADate: TClarionDate; ATime: TClarionTime;
+      const ASuffix: string = DEFAULT_CONTROL_SUFFIX);
+    function NewControl(var ABlock: TControlBlock): string;
+    class function TryParse(const AControl: string;
+      out ADate: TClarionDate; out ATime: TClarionTime;
+      out ACounter: Integer; out ASuffix: string): Boolean; static;
+  end;
+
+implementation
+
+constructor TControlGenerator.Create(ADate: TClarionDate; ATime: TClarionTime;
+  const ASuffix: string);
+begin
+  inherited Create;
+  FDate := ADate;
+  FTime := ATime;
+  FSuffix := ASuffix;
+
+  Assert(Length(FSuffix) = 2, 'CONTROL suffix must be 2 characters');
+  Assert((FDate >= 0) and (FDate <= 99999), 'FECEMIS out of 5-digit range');
+  Assert((FTime >= 0) and (FTime <= 9999999), 'Clarion time out of 7-digit range');
+end;
+
+function TControlGenerator.NewControl(var ABlock: TControlBlock): string;
+begin
+  Result := Format('%.5d%.7d%.5d%s',
+    [FDate, FTime, ABlock.Next, FSuffix]);
+  Assert(Length(Result) = CONTROL_LENGTH, 'Generated CONTROL has wrong length');
+end;
+
+class function TControlGenerator.TryParse(const AControl: string;
+  out ADate: TClarionDate; out ATime: TClarionTime;
+  out ACounter: Integer; out ASuffix: string): Boolean;
+begin
+  Result := False;
+  ADate := 0; ATime := 0; ACounter := 0; ASuffix := '';
+
+  if Length(Trim(AControl)) <> CONTROL_LENGTH then
+    Exit;
+
+  Result :=
+    TryStrToInt(Copy(AControl,  1, 5), ADate)  and
+    TryStrToInt(Copy(AControl,  6, 7), ATime)  and
+    TryStrToInt(Copy(AControl, 13, 5), ACounter);
+
+  if Result then
+    ASuffix := Copy(AControl, 18, 2);
+end;
+
+end.

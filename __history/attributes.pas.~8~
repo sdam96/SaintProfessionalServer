@@ -1,0 +1,52 @@
+unit attributes;
+
+interface
+
+type
+  TTableAttributes = class(TCustomAttribute)
+  private
+    FName: string;
+  public
+    constructor Create(const AName: string);
+    property Name: string read FName;
+  end;
+
+  UniqueKeyAttribute = class(TCustomAttribute)
+
+  end;
+
+  UniqueIndexAttribute = class(TCustomAttribute)
+  private
+    FName: string;
+    FColumns: string;
+  public
+    constructor Create(const AName, AColumns: string);
+    property Name: string read fname;
+    property Columns: string read fcolumns;
+  end;
+
+  ReadUpdateOnlyAttribute = class(TCustomAttribute)
+  end;
+
+implementation
+
+
+
+{ TTableAttributes }
+
+constructor TTableAttributes.Create(const AName: string);
+begin
+  inherited create;
+  fname:=aname;
+end;
+
+{ UniqueIndexAttribute }
+
+constructor UniqueIndexAttribute.Create(const AName, AColumns: string);
+begin
+  inherited create;
+  fname:=aname;
+  fcolumns:=acolumns;
+end;
+
+end.

@@ -1,0 +1,65 @@
+unit models.types;
+
+interface
+
+type
+  TMonto = Currency;
+  TCantidad = Currency;
+  TPorcentaje = Currency;
+  TFechaInt = Integer;
+  TIndicador = ShortInt;
+  THoraClarion = Integer;
+
+const
+  MONTO_MAX: TMonto = 922337203685477.58;
+  CLARION_EPOCH_YEAR = 1800;
+  CLARION_EPOCH_MONTH = 12;
+  CLARION_EPOCH_DAY = 28;
+
+function MontoEnRango(const AValor: Double): Boolean;
+function ClarionADate(AFecha: TFechaInt): TDate;
+function DateAClarion(const AFecha: TDate): TFechaInt;
+function ClarionAStr(AFecha: TFechaInt): string;
+function HoraClarionAhora: THoraClarion;
+
+implementation
+
+uses
+  System.SysUtils, System.DateUtils;
+
+var
+  GEpoch: TDate;
+
+function MontoEnRango(const AValor: Double): Boolean;
+begin
+  Result := Abs(AValor) <= MONTO_MAX;
+end;
+
+function ClarionADate(AFecha: TFechaInt): TDate;
+begin
+  Result := GEpoch + AFecha;
+end;
+
+function DateAClarion(const AFecha: TDate): TFechaInt;
+begin
+  Result := Trunc(AFecha) - Trunc(GEpoch);
+end;
+
+function ClarionAStr(AFecha: TFechaInt): string;
+begin
+  if AFecha = 0 then Exit('');
+  Result := FormatDateTime('yyyymmdd', ClarionADate(AFecha));
+end;
+
+function HoraClarionAhora: THoraClarion;
+var
+  H, M, S, MS: Word;
+begin
+  DecodeTime(Now, H, M, S, MS);
+  Result := (H * 360000) + (M * 6000) + (S * 100) + (MS div 10);
+end;
+
+initialization
+
+
+end.

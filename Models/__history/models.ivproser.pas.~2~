@@ -1,0 +1,146 @@
+unit models.ivproser;
+
+interface
+
+uses
+  attributes, models.types;
+
+type
+  // Productos Y servicios. Se discriminan por TIPINV / TIPPRO.
+  // EXISTENCIA..EXISTENCIA5 es POSICIONAL por deposito (01..05).
+  // CANVEN guarda la cantidad de LA ULTIMA venta, no un acumulado.
+  [Table('ivproser')]
+  [UniqueIndex('KeyPro01', 'CODPRO')]
+  TIVProSer = class
+  public
+    [UniqueKey][NotNull][Size(15)] CODPRO: string;
+    [Indexed][Size(15)] CODIGO: string;          // categoria nivel 1
+    [Size(60)] DESCRIP1: string;
+    [Size(60)] DESCRIP2: string;
+    [Size(60)] DESCRIP3: string;
+    [Size(10)] UNIDAD: string;
+
+    [Decimal(17, 2)] COSTOACT: TMonto;
+    [Decimal(17, 2)] COSTOPRO: TMonto;
+    [Decimal(17, 2)] PRECIO1: TMonto;
+    [Decimal(7, 2)]  UTILPRECIO1: TPorcentaje;
+    [Decimal(17, 2)] PRECIO2: TMonto;
+    [Decimal(7, 2)]  UTILPRECIO2: TPorcentaje;
+    [Decimal(17, 2)] PRECIO3: TMonto;
+    [Decimal(7, 2)]  UTILPRECIO3: TPorcentaje;
+
+    [Decimal(17, 3)] EXISTENCIA: TCantidad;      // deposito 01
+    [Decimal(17, 3)] EXISTENCIAANT: TCantidad;
+    EXENTO: TIndicador;
+    [Decimal(7, 2)] IMPPOR: TPorcentaje;
+    MOVMES: TIndicador;
+    TIPINV: TIndicador;
+    TIPPRO: TIndicador;
+    [Decimal(17, 2)] COSTOANT: TMonto;
+    [Decimal(17, 3)] EXIMINIMA: TCantidad;
+    [Decimal(17, 3)] EXIMAXIMA: TCantidad;
+    [Decimal(17, 2)] COSTOEXT: TMonto;
+    [Decimal(17, 2)] CAMBIOEXT: TMonto;
+    [Indexed][Size(15)] CODREF: string;
+    [Decimal(17, 2)] COSTOPOR: TMonto;
+    [Size(25)] CODPROV: string;
+    MARCA: TIndicador;
+
+    [Decimal(17, 3)] EXISTENCIA2: TCantidad;     // deposito 02
+    [Decimal(17, 3)] EXISTENCIA3: TCantidad;
+    [Decimal(17, 3)] EXISTENCIA4: TCantidad;
+    [Decimal(17, 3)] EXISTENCIA5: TCantidad;
+
+    USASERIAL: TIndicador;
+    [Decimal(17, 3)] CANPEDIDA: TCantidad;
+    [Decimal(17, 3)] CANODC: TCantidad;
+    [Decimal(17, 3)] CANRESERVADA: TCantidad;
+    PROCOMPUESTO: TIndicador;
+    [Size(100)] FOTO: string;
+
+    USASERVIDOR: TIndicador;
+    [Decimal(5, 2)]  PORCOMISION: TPorcentaje;
+    [Decimal(17, 2)] MONTOCOMISION: TMonto;
+
+    [Size(15)] CODCAT2: string;
+    [Size(15)] CODCAT3: string;
+    [Size(15)] CODCAT4: string;
+    [Size(15)] CODCAT5: string;
+
+    FECCOM: TFechaInt;
+    [Decimal(17, 3)] CANCOM: TCantidad;
+    FECVEN: TFechaInt;
+    [Decimal(17, 3)] CANVEN: TCantidad;
+
+    [Decimal(17, 3)] CONTEO1: TCantidad;
+    [Decimal(17, 3)] CONTEO2: TCantidad;
+    [Decimal(17, 3)] CONTEO3: TCantidad;
+    [Decimal(17, 3)] CONTEO4: TCantidad;
+    [Decimal(17, 3)] CONTEO5: TCantidad;
+
+    [Size(20)] UBICACION1: string;
+    [Size(20)] UBICACION2: string;
+    [Size(20)] UBICACION3: string;
+    [Size(20)] UBICACION4: string;
+    [Size(20)] UBICACION5: string;
+
+    [Decimal(7, 2)] IMPPOR2: TPorcentaje;
+    [Decimal(7, 2)] IMPPOR3: TPorcentaje;
+    [Decimal(7, 2)] IMPPOR4: TPorcentaje;
+
+    [Size(20)] CUENTAVENTACON: string;
+    [Size(20)] CUENTAVENTACRE: string;
+    [Size(20)] CUENTACOMPRACON: string;
+    [Size(20)] CUENTACOMPRACRE: string;
+    [Size(20)] CCVENTA: string;
+    [Size(20)] CCCOMPRA: string;
+
+    [Decimal(17, 3)] CANTEMPAQUE: TCantidad;
+    [Size(19)] GRUPOINV: string;
+
+    [Decimal(17, 2)] MONTOCOM1: TMonto;
+    [Decimal(17, 2)] MONTOCOM2: TMonto;
+    [Decimal(17, 2)] MONTOCOM3: TMonto;
+    ACTIVARCOMXMONTO: TIndicador;
+    [Decimal(17, 2)] COSTOPROANT: TMonto;
+
+    [Size(25)] CODIGOPROV: string;
+    GARANTIA: Integer;
+    [Size(19)] LINEAINV: string;
+    [Size(19)] CODFABRICANTE: string;
+
+    PVPPORESCALA: TIndicador;
+    [Decimal(17, 3)] DESCALA1: TCantidad;
+    [Decimal(17, 3)] HESCALA1: TCantidad;
+    [Decimal(17, 3)] DESCALA2: TCantidad;
+    [Decimal(17, 3)] HESCALA2: TCantidad;
+    [Decimal(17, 3)] DESCALA3: TCantidad;
+    [Decimal(17, 3)] HESCALA3: TCantidad;
+
+    [Size(25)] CODIGOCLIEN: string;
+    [Size(30)] NUMULTIMCOMPRA: string;
+    [Size(30)] NUMULTIMVENTA: string;
+    ESCOMISPORCENT: TIndicador;
+    ACTIVO: TIndicador;
+    LEER_CAN_PRE: TIndicador;
+    [Size(20)] TIPOMEDIDA: string;               // 'Cantidad'
+    CAN_DECIMALES_MEDIDA: TIndicador;
+    INTEGRADO: TIndicador;
+
+    // ---- Parches de localizacion CR ----
+    [Size(20)] CABYS: string;
+    [Size(20)] Partida_arancelaria: string;
+    Es_otro_cargo: TIndicador;
+    [Size(10)] Tipo_otro_cargo: string;
+    [Size(25)] Cedula_tercero: string;
+    [Size(100)] Nombre_tercero: string;
+    [Size(10)] Unidad_medidaCR: string;
+
+    [Size(2)] CODIMPUESTO1: string;
+    [Size(2)] CODIMPUESTO2: string;
+    [Size(2)] CODIMPUESTO3: string;
+  end;
+
+implementation
+
+end.

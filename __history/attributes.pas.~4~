@@ -1,0 +1,18 @@
+unit attributes;
+
+interface
+
+type
+  TTableAttributes = class(TCustomAttribute)
+  private
+    FName: string;
+  public
+    constructor Create(const AName: string);
+    property Name: string read FName;
+  end;
+
+implementation
+
+
+
+end.

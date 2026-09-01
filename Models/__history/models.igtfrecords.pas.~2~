@@ -1,0 +1,27 @@
+unit models.igtfrecords;
+
+interface
+
+uses
+  attributes, models.types;
+
+type
+  // Tabla de parche (camelCase, ajena a la convencion del resto del esquema).
+  // porcentajeImpuestoIGTF es TEXTO, no numerico. Valor observado: '3'.
+  [Table('igtfrecords')]
+  [UniqueIndex('KeyIgtf01', 'dcheaderCONTROL')]   // inferido
+  TIGTFRecord = class
+  public
+    [UniqueKey][NotNull][Size(19)] dcheaderCONTROL: string;
+    [Decimal(17, 2)] baseImponibleGeneral: TMonto;
+    [Size(10)] porcentajeImpuestoIGTF: string;
+    [Size(30)] DESCRIPCION: string;                 // 'Dolar'
+    [Decimal(17, 2)] IGTFEFECTIVOMONEDALOCAL: TMonto;
+    [Decimal(17, 2)] IGTFCHEQUEMONEDALOCAL: TMonto;
+    [Decimal(17, 2)] IGTFTARJETAMONEDALOCAL: TMonto;
+    [Decimal(17, 2)] IGTFOTROMETODOMONEDALOCAL: TMonto;
+  end;
+
+implementation
+
+end.

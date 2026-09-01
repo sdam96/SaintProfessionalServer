@@ -1,0 +1,29 @@
+unit services.control;
+
+interface
+
+uses
+  System.SysUtils, models.types, services.counters;
+
+const
+  DEFAULT_CONTROL_SUFFIX = '01';
+  CONTROL_LENGTH = 19;
+
+type
+  TControlGenerator = class
+  private
+    FDate: TClarionDate;
+    FTime: TClarionTime;
+    FSuffix: string;
+  public
+    constructor Create(ADate: TClarionDate; ATime: TClarionTime;
+      const ASuffix: string = DEFAULT_CONTROL_SUFFIX);
+
+    function NewControl(var ABlock: TControlBlock): string;
+    class function TryParse(const AControl: string; out ADate: TClarionDate;
+    out ATime: TClarionTime; out ACounter: Integer; out ASuffix: string): Boolean; static;
+  end;
+
+implementation
+
+end.

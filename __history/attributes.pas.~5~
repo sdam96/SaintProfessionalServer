@@ -1,0 +1,39 @@
+unit attributes;
+
+interface
+
+type
+  TTableAttributes = class(TCustomAttribute)
+  private
+    FName: string;
+  public
+    constructor Create(const AName: string);
+    property Name: string read FName;
+  end;
+
+  UniqueKeyAttributte = class(TCustomAttribute)
+
+  end;
+
+  UniqueIndexAttribute = class(TCustomAttribute)
+  private
+    FName: string;
+    FColumns: string;
+  public
+    constructor Create(const AName, AColumns: string);
+    property Name: string read fname;
+    property Columns: string read columns;
+  end;
+
+implementation
+
+
+
+{ TTableAttributes }
+
+constructor TTableAttributes.Create(const AName: string);
+begin
+
+end;
+
+end.

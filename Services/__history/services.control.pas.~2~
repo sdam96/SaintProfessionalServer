@@ -1,0 +1,23 @@
+unit services.control;
+
+interface
+
+uses
+  System.SysUtils, models.types, services.counters;
+
+const
+  DEFAULT_CONTROL_SUFFIX = '01';
+  CONTROL_LENGTH = 19;
+
+type
+  TControlGenerator = class
+  private
+    FDate: TClarionDate;
+    FTime: TClarionTime;
+    FSuffix: string;
+  public
+  end;
+
+implementation
+
+end.

@@ -1,0 +1,37 @@
+unit models.movprod;
+
+interface
+
+uses
+  attributes, models.types;
+
+type
+  // Ultimo movimiento por producto. Una fila por CODPRO, se ACTUALIZA.
+  // Si no existe la fila, hay que insertarla (ver producto 010002, snapshot 10).
+  [Table('movprod')]
+  [UniqueIndex('KeyMov01', 'CODPRO')]   // inferido
+  TMovProd = class
+  public
+    [UniqueKey][NotNull][Size(15)] CODPRO: string;
+    TIPINV: TIndicador;
+
+    // ---- Ultima compra ----
+    FECULTCOMP: TFechaInt;
+    [Size(30)] NUMULTCOMPRA: string;
+    [Decimal(17, 3)] CANTULTCOMP: TCantidad;
+    [Size(25)] IDPROVEE: string;
+    [Size(100)] NOMPROVEE: string;
+    [Size(40)] NOMRESPONS: string;
+
+    // ---- Ultima venta ----
+    FECULTVENT: TFechaInt;
+    [Size(30)] NUMULTVENT: string;
+    [Decimal(17, 3)] CANTULTVENT: TCantidad;
+    [Size(25)] IDCLIEN: string;
+    [Size(100)] NOMCLIENTE: string;
+    [Size(40)] NOMVENDEDOR: string;    // 'Ventas Directas' cuando CODVEN='01'
+  end;
+
+implementation
+
+end.

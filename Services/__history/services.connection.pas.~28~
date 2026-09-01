@@ -1,0 +1,145 @@
+unit services.connection;
+
+interface
+
+uses
+  System.SysUtils, Data.DB, FireDAC.Comp.Client, FireDAC.Stan.Param;
+
+type
+  ESaintDatabase = class(Exception);
+
+  ISaintSession = interface
+    ['{7B1C0A42-9E3D-4F55-8A21-6C4D9E0B7F13}']
+    function Connection: TFDConnection;
+    procedure BeginTx;
+    procedure CommitTx;
+    procedure RollbackTx;
+    function InTransaction: Boolean;
+    function ScalarInt(const ASQL: string; const AParams: array of Variant): Int64;
+    procedure Execute(const ASQL: string; const AParams: array of Variant);
+  end;
+
+  TSaintSession = class(TInterfacedObject, ISaintSession)
+  private
+    FConn: TFDConnection;
+    FOwnsConnection: Boolean;
+    procedure ConfigureSession;
+  public
+    constructor Create(AConn: TFDConnection; AOwnsConnection: Boolean = False);
+    destructor Destroy; override;
+    function Connection: TFDConnection;
+    procedure BeginTx;
+    procedure CommitTx;
+    procedure RollbackTx;
+    function InTransaction: Boolean;
+    function ScalarInt(const ASQL: string; const AParams: array of Variant): Int64;
+    procedure Execute(const ASQL: string; const AParams: array of Variant);
+  end;
+
+implementation
+
+constructor TSaintSession.Create(AConn: TFDConnection; AOwnsConnection: Boolean);
+begin
+  inherited Create;
+  FConn := AConn;
+  FOwnsConnection := AOwnsConnection;
+  ConfigureSession;
+end;
+
+destructor TSaintSession.Destroy;
+begin
+  if FOwnsConnection then
+    FreeAndNil(FConn);
+  inherited;
+end;
+
+procedure TSaintSession.ConfigureSession;
+begin
+  try
+    if not FConn.Connected then
+      FConn.Connected := True;
+  except
+    raise ESaintDatabase.Create(
+      'No se pudo conectar con la base de datos de Saint.');
+  end;
+
+  // CREATE DATABASE declares utf8mb4_0900_ai_ci while the tables override it
+  // with utf8mb4_unicode_ci. Without this, any text comparison between a
+  // literal and a column raises error 1267.
+  FConn.ExecSQL('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
+
+  // No column in dcheader/dcdetall has a DEFAULT and almost none are NOT NULL.
+  // Under strict mode any omitted column aborts the INSERT.
+  FConn.ExecSQL('SET SESSION sql_mode = ''''');
+
+  FConn.TxOptions.AutoCommit := False;
+end;
+
+function TSaintSession.Connection: TFDConnection;
+begin
+  Result := FConn;
+end;
+
+procedure TSaintSession.BeginTx;
+begin
+  if not FConn.InTransaction then
+    FConn.StartTransaction;
+end;
+
+procedure TSaintSession.CommitTx;
+begin
+  if FConn.InTransaction then
+    FConn.Commit;
+end;
+
+procedure TSaintSession.RollbackTx;
+begin
+  if FConn.InTransaction then
+    FConn.Rollback;
+end;
+
+function TSaintSession.InTransaction: Boolean;
+begin
+  Result := FConn.InTransaction;
+end;
+
+function TSaintSession.ScalarInt(const ASQL: string;
+  const AParams: array of Variant): Int64;
+var
+  Query: TFDQuery;
+  I: Integer;
+begin
+  Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := FConn;
+    Query.SQL.Text := ASQL;
+    for I := 0 to High(AParams) do
+      Query.Params[I].Value := AParams[I];
+    Query.Open;
+    if Query.IsEmpty then
+      raise ESaintDatabase.Create('La consulta no devolvió resultados.');
+    Result := Query.Fields[0].AsLargeInt;
+  finally
+    Query.Free;
+  end;
+end;
+
+procedure TSaintSession.Execute(const ASQL: string;
+  const AParams: array of Variant);
+var
+  Query: TFDQuery;
+  I: Integer;
+begin
+  Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := FConn;
+    Query.SQL.Text := ASQL;
+    for I := 0 to High(AParams) do
+      Query.Params[I].Value := AParams[I];
+    Query.ExecSQL;
+  finally
+    Query.Free;
+  end;
+end;
+
+end.

@@ -1,0 +1,125 @@
+unit services.counters;
+
+interface
+
+uses
+  System.SysUtils, services.connection, models.types;
+
+type
+  // A range of consecutive CONTADORCONTROL values reserved exclusively.
+  TControlBlock = record
+  private
+    FFirst: Integer;
+    FCount: Integer;
+    FUsed: Integer;
+  public
+    class function Allocate(AFirst, ACount: Integer): TControlBlock; static;
+    function Next: Integer;
+    function Remaining: Integer;
+    property First: Integer read FFirst;
+    property Count: Integer read FCount;
+  end;
+
+  ECounterExhausted = class(Exception);
+
+  ICounterAllocator = interface
+    ['{2F8A5C61-4B7E-49D0-9C33-1A5E8B2D6047}']
+    function AllocateControlBlock(ACount: Integer): TControlBlock;
+    function AllocateInvoiceNumber: Integer;
+    function AllocateQuoteNumber: Integer;
+  end;
+
+  TCounterAllocator = class(TInterfacedObject, ICounterAllocator)
+  private
+    FSession: ISaintSession;
+    function AllocateField(const AField: string; ACount: Integer): Integer;
+  public
+    constructor Create(const ASession: ISaintSession);
+    function AllocateControlBlock(ACount: Integer): TControlBlock;
+    function AllocateInvoiceNumber: Integer;
+    function AllocateQuoteNumber: Integer;
+  end;
+
+implementation
+
+{ TControlBlock }
+
+class function TControlBlock.Allocate(AFirst, ACount: Integer): TControlBlock;
+begin
+  Result.FFirst := AFirst;
+  Result.FCount := ACount;
+  Result.FUsed  := 0;
+end;
+
+function TControlBlock.Next: Integer;
+begin
+  if FUsed >= FCount then
+    raise ECounterExhausted.Create(
+      'Se agotó el bloque de correlativos reservado para el documento.');
+  Result := FFirst + FUsed;
+  Inc(FUsed);
+end;
+
+function TControlBlock.Remaining: Integer;
+begin
+  Result := FCount - FUsed;
+end;
+
+{ TCounterAllocator }
+
+constructor TCounterAllocator.Create(const ASession: ISaintSession);
+begin
+  inherited Create;
+  FSession := ASession;
+end;
+
+function TCounterAllocator.AllocateField(const AField: string;
+  ACount: Integer): Integer;
+var
+  Ceiling: Int64;
+  OwnsTx: Boolean;
+begin
+  if ACount < 1 then
+    raise ECounterExhausted.Create(
+      'La cantidad de correlativos a reservar debe ser al menos 1.');
+
+  OwnsTx := not FSession.InTransaction;
+  if OwnsTx then
+    FSession.BeginTx;
+  try
+    FSession.Execute(
+      Format('UPDATE cfparame SET %s = LAST_INSERT_ID((%s + :n) MOD 100000) ' +
+             'WHERE CONTROL = 1', [AField, AField]),
+      [ACount]);
+
+    Ceiling := FSession.ScalarInt('SELECT LAST_INSERT_ID()', []);
+
+    if OwnsTx then
+      FSession.CommitTx;
+  except
+    if OwnsTx then
+      FSession.RollbackTx;
+    raise;
+  end;
+
+  Result := (Integer(Ceiling) - ACount + 100000) mod 100000;
+end;
+
+function TCounterAllocator.AllocateControlBlock(ACount: Integer): TControlBlock;
+begin
+  Result := TControlBlock.Allocate(
+    AllocateField('CONTADORCONTROL', ACount), ACount);
+end;
+
+function TCounterAllocator.AllocateInvoiceNumber: Integer;
+begin
+  // NROINIFAC holds the NEXT number to use, not the last one used.
+  Result := AllocateField('NROINIFAC', 1);
+end;
+
+function TCounterAllocator.AllocateQuoteNumber: Integer;
+begin
+  Result := AllocateField('NROINIPRE', 1);
+end;
+
+end.

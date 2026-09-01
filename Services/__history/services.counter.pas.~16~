@@ -1,0 +1,117 @@
+unit services.counter;
+
+interface
+
+uses
+  System.SysUtils, services.connection, models.types;
+
+type
+  TControlBlock = record
+  private
+    FFirst: Integer;
+    FAmount: Integer;
+    FConsumed: Integer;
+  public
+    class function Create(AFirst, AAmount: Integer): TControlBlock; static;
+    function Next: Integer;
+    function Remaining: Integer;
+    property First: Integer read FFirst;
+    property Amount: Integer read FAmount;
+  end;
+
+  ENoCounter = class(Exception);
+
+  IReserveCounter = interface
+    ['{FB922ABF-5519-42A9-8713-9E94E8ADB634}']
+    function ReserveControl(AAmount: Integer): TControlBlock;
+    function ReserveDocNumber: Integer;
+    function ReserveBudgetNumber: Integer;
+  end;
+
+  TReserveCounter = class(TInterfacedObject, IReserveCounter)
+  private
+    FSession: ISessionSaint;
+    function ReserveField(const AField: string; AAmount: Integer): Integer;
+  public
+    constructor Create(const ASession: ISessionSaint);
+    function ReserveControl(ACantidad: Integer): TControlBlock;
+    function ReserveDocNumber: Integer;
+    function ReserveBudgetNumber: Integer;
+  end;
+
+implementation
+
+{ TControlBlock }
+
+class function TControlBlock.Create(AFirst, AAmount: Integer): TControlBlock;
+begin
+  Result.FFirst := AFirst;
+  Result.FAmount := AAmount;
+  Result.FConsumed := 0;
+end;
+
+function TControlBlock.Next: Integer;
+begin
+  if FConsumed >= FAmount then
+    raise ENoCounter.CreateFmt(
+      'Bloque de CONTADORCONTROL agotado (reservados %d desde %d). ' +
+      'La cantidad reservada no corresponde con el documento.',
+      [FAmount, FFirst]);
+  Result := FFirst + FConsumed;
+  Inc(FConsumed);
+end;
+
+function TControlBlock.Remaining: Integer;
+begin
+  Result := FAmount - FConsumed;
+end;
+
+{ TReserveCounter }
+
+constructor TReserveCounter.Create(const ASession: ISessionSaint);
+begin
+  inherited Create;
+  FSession := ASession;
+end;
+
+function TReserveCounter.ReserveBudgetNumber: Integer;
+begin
+
+end;
+
+function TReserveCounter.ReserveControl(ACantidad: Integer): TControlBlock;
+begin
+
+end;
+
+function TReserveCounter.ReserveDocNumber: Integer;
+begin
+
+end;
+
+function TReserveCounter.ReserveField(const AField: string;
+  AAmount: Integer): Integer;
+var
+  Top: Int64;
+  OwnTx: Boolean;
+(begin
+  if AAmount < 1 then
+      raise ENoCounter.Create('Cantidad a reservar debe ser minimo 1.');
+
+        OwnTx := not FSession.InTransaction;
+          if OwnTx then FSession.StartTransaction;
+
+            try
+                FSession.Execute(
+                      Format('UPDATE cfparame SET %s = LAST_INSERT_ID(%s + :n) WHERE CONTROL = 1',
+                              [AField, AField]),
+                                  [AAmount]);
+
+                                      Top := FSession.ScalarInt('SELECT LAST_INSERT_ID()', []);
+  finally
+
+  end;
+
+end;
+
+end.

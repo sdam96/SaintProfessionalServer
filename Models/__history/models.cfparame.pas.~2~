@@ -1,0 +1,38 @@
+unit models.cfparame;
+
+interface
+
+uses
+  attributes, models.types;
+
+type
+  // MAPEO PARCIAL DELIBERADO. cfparame tiene ~300 columnas de configuracion
+  // que pertenecen a Saint. Nunca hacer INSERT ni UPDATE de la entidad completa:
+  // el ORM pisaria configuracion que no conocemos.
+  // Solo SELECT y UPDATE de columnas nombradas una por una.
+  [Table('cfparame')]
+  [UniqueIndex('KeyPar01', 'CONTROL')]
+  [ReadUpdateOnly]
+  TCFParametros = class
+  public
+    [UniqueKey][NotNull] CONTROL: TIndicador;      // siempre 1
+
+    [Size(100)] NOMBRE: string;
+    [Size(25)] NUMFISCAL: string;
+    [Decimal(7, 2)] IMPPOR: TPorcentaje;           // IVA general, 16.00
+
+    // ---- Contadores. Unico punto de contencion real con Saint. ----
+    NROINIFAC: Integer;                            // proximo numero de factura
+    NROINIPRE: Integer;                            // proximo numero de cotizacion
+    NROINIDEV: Integer;
+    CONTADORCONTROL: Integer;                      // secuencial de CONTROL/FECHORA
+
+    [Decimal(17, 4)] TASACAMBIO1: TMonto;          // 850.0000
+    [Size(15)] NOMBREMONEDA: string;               // 'USD'
+    [Size(15)] MONEDA: string;                     // 'BolIvares'
+    FECCIERRE: TFechaInt;
+  end;
+
+implementation
+
+end.

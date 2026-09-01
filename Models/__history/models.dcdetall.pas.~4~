@@ -1,0 +1,165 @@
+unit models.dcdetall;
+
+interface
+
+uses
+  attributes, models.types;
+
+type
+
+
+  TDCDetalle = class
+  public
+    // ---- Clave primaria compuesta: CONTROL + FECHORA ----
+    [PrimaryKey][NotNull][Size(19)] CONTROL: string;
+    [PrimaryKey][NotNull][FixedLength][Size(20)] FECHORA: string;
+
+    // ---- Producto y cantidades ----
+    [Indexed][Size(15)] CODPRO: string;
+    [Decimal(17, 3)] CANTIDAD: TCantidad;
+    [Decimal(17, 2)] PRECOSUNI: TMonto;
+    [Decimal(17, 2)] COSTOACT: TMonto;
+    [Decimal(17, 2)] COSTOPRO: TMonto;
+    [Decimal(7, 2)]  IMPPOR: TPorcentaje;
+    [Decimal(17, 2)] MONTOIMP: TMonto;
+    [Decimal(17, 2)] TOTAL: TMonto;
+    [Size(60)] DESCRIP1: string;
+
+    // ---- Documento ----
+    [Indexed][Size(10)] TIPTRAN: string;
+    [Indexed] FECEMIS: TFechaInt;
+    [Size(10)] FECEMISS: string;
+
+    // ---- Precios de venta y márgenes ----
+    [Decimal(17, 2)] PRECIO1: TMonto;
+    [Decimal(7, 2)]  UTILPRECIO1: TPorcentaje;
+    [Decimal(17, 2)] PRECIO2: TMonto;
+    [Decimal(7, 2)]  UTILPRECIO2: TPorcentaje;
+    [Decimal(17, 2)] PRECIO3: TMonto;
+    [Decimal(7, 2)]  UTILPRECIO3: TPorcentaje;
+    [Decimal(17, 2)] MONTOCOS: TMonto;
+    TIPINV: TIndicador;
+
+    // ---- Estructura de costo de importación (juego 1) ----
+    [Decimal(7, 2)]  FACCAM1: TPorcentaje;
+    [Decimal(17, 2)] VALFOB1: TMonto;
+    [Decimal(17, 2)] COSTOFLE1: TMonto;
+    [Decimal(17, 2)] COSTOSEG1: TMonto;
+    [Decimal(17, 2)] VALORCIF1: TMonto;
+    [Decimal(17, 2)] COSTOARA1: TMonto;
+    [Decimal(17, 2)] COSTONAC1: TMonto;
+    [Decimal(17, 2)] COSTOADU1: TMonto;
+    [Decimal(17, 2)] PAGOCOM1: TMonto;
+    [Decimal(17, 2)] GASTOADU1: TMonto;
+    [Decimal(17, 2)] OTROGAS1: TMonto;
+    [Decimal(17, 2)] COSTOFIN1: TMonto;
+    [Size(30)] NUMPLANILLA: string;
+
+    // ---- Estructura de costo de importación (juego 2) ----
+    [Decimal(7, 2)]  FACCAM2: TPorcentaje;
+    [Decimal(17, 2)] VALFOB2: TMonto;
+    [Decimal(17, 2)] COSTOFLE2: TMonto;
+    [Decimal(17, 2)] COSTOSEG2: TMonto;
+    [Decimal(17, 2)] VALORCIF2: TMonto;
+    [Decimal(17, 2)] COSTOARA2: TMonto;
+    [Decimal(17, 2)] COSTONAC2: TMonto;
+    [Decimal(17, 2)] COSTOADU2: TMonto;
+    [Decimal(17, 2)] PAGOCOM2: TMonto;
+    [Decimal(17, 2)] GASTOADU2: TMonto;
+    [Decimal(17, 2)] OTROGAS2: TMonto;
+    [Decimal(17, 2)] COSTOFIN2: TMonto;
+
+    // ---- Precios especiales ----
+    [Decimal(17, 2)] PRECIOE1: TMonto;
+    [Decimal(17, 2)] PRECIOE2: TMonto;
+    [Decimal(17, 2)] PRECIOE3: TMonto;
+
+    // ---- Clasificación del renglón ----
+    TIPODET: TIndicador;
+    TIPPRO: TIndicador;
+    TIPREG: TIndicador;
+    [Size(25)] CODIGO: string;
+
+    // ---- Comisiones ----
+    [Decimal(17, 2)] COMISVEN: TMonto;
+    [Decimal(17, 2)] COMISCOB: TMonto;
+    COMISTIP: TIndicador;
+
+    // ---- Almacenes ----
+    [Size(3)] CODALREC: string;
+    [Size(3)] CODALENT: string;
+
+    // ---- Descuentos por renglón ----
+    [Decimal(7, 2)]  PORDES: TPorcentaje;
+    [Decimal(17, 2)] MONTODESCUENTO: TMonto;
+
+    [Size(19)] FHIMPORTAR: string;
+    COMPONENTE: TIndicador;
+    [Size(19)] FHPRODBASE: string;
+
+    // ---- Servicio ----
+    [Indexed][Size(15)] CODSER: string;
+    [Decimal(5, 2)]  PORCOMISION: TPorcentaje;
+    [Decimal(17, 2)] MONTOCOMISION: TMonto;
+
+    // ---- Devolución ----
+    DEVUELTA: TIndicador;
+    [Decimal(17, 2)] CANTIDADDEV: TCantidad;
+
+    ORIGEN: TIndicador;
+    PRECIO: TIndicador;               // tinyint: número de lista de precio aplicada
+    [Decimal(7, 2)] FACTORCAMBIO: TPorcentaje;
+    [Size(15)] SIGNOMONEDA: string;
+
+    // ---- Impuestos adicionales ----
+    [Decimal(7, 2)]  IMPPOR2: TPorcentaje;
+    [Decimal(17, 2)] MONTOIMP2: TMonto;
+    [Decimal(7, 2)]  IMPPOR3: TPorcentaje;
+    [Decimal(17, 2)] MONTOIMP3: TMonto;
+
+    PROCESADO: TIndicador;
+    [Size(15)] CODIGODEP: string;
+    [Size(19)] GRUPOINV: string;
+    CONLINEA: TIndicador;
+
+    // ---- Telefonía / contrato ----
+    [Size(20)] NUMCONTRATO: string;
+    [Size(20)] NUMTELEFONO: string;
+    [Size(15)] CODVEN: string;
+
+    // ---- Retención sobre tarjeta ----
+    [Decimal(7, 2)]  PORRETTAR: TPorcentaje;
+    [Decimal(17, 2)] MONTORETTAR: TMonto;
+
+    MESVENC: Integer;
+    FECHAVENCE: TFechaInt;
+
+    [Size(19)] LINEAOINV: string;
+    [Size(19)] CODFABRICANTE: string;
+    [Indexed][Size(60)] CENTROCOSTO: string;
+    [Size(20)] NROSNEDET: string;
+    [Size(40)] NOMBRE: string;
+
+    // ---- Comisión a nivel de detalle ----
+    [Decimal(13, 2)] PORCOMISDETAIL: TPorcentaje;
+    [Decimal(13, 2)] MTOCOMISDETAIL: TMonto;
+
+    // ---- Descuento y recargo globales prorrateados ----
+    [Decimal(7, 2)]  PORDESGLO: TPorcentaje;
+    [Decimal(17, 2)] MONTODESCUENTOGLO: TMonto;
+    [Decimal(17, 2)] CANTIDADFAC: TCantidad;
+    [Decimal(7, 2)]  PORREC: TPorcentaje;
+    [Decimal(17, 2)] MONTORECARGA: TMonto;
+    [Decimal(7, 2)]  PORRECARGOGLO: TPorcentaje;
+    [Decimal(17, 2)] MONTORECARGOGLO: TMonto;
+
+    // ---- Códigos de impuesto ----
+    [Size(2)] CODIMPUESTO1: string;
+    [Size(2)] CODIMPUESTO2: string;
+    [Size(2)] CODIMPUESTO3: string;
+    [DefaultValue('0')] IMPUESTOVALORAGREGADO: TIndicador;
+  end;
+
+implementation
+
+end.

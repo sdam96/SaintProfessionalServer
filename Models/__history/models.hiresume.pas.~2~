@@ -1,0 +1,29 @@
+unit models.hiresume;
+
+interface
+
+uses
+  attributes, models.types;
+
+type
+  [Table('hiresume')]
+  [UniqueIndex('KeyHiRes01', 'ANIOH;MESH;TIPREG')]   // inferido
+  THiResumen = class
+  public
+    [UniqueKey][NotNull] ANIOH: Integer;
+    [UniqueKey][NotNull] MESH: Integer;
+    [UniqueKey][NotNull] TIPREG: TIndicador;
+
+    [Decimal(17, 2)] CONTADO: TMonto;
+    [Decimal(17, 2)] CREDITO: TMonto;
+    [Decimal(17, 2)] IMPUESTO: TMonto;
+    [Decimal(17, 2)] COBPAG: TMonto;
+    [Decimal(17, 2)] DESCUENTOS: TMonto;
+    [Decimal(17, 2)] DEVOLUCIONES: TMonto;
+    [Decimal(17, 2)] COSTOSMERCANCIA: TMonto;
+    [Decimal(17, 2)] COSTOSMERCANCIADEV: TMonto;
+  end;
+
+implementation
+
+end.

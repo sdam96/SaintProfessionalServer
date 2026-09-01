@@ -1,0 +1,50 @@
+unit models.hiproduc;
+
+interface
+
+uses
+  attributes, models.types;
+
+type
+  // Historico mensual por producto. Acumulativo: SUMA, no reemplaza.
+  [Table('hiproduc')]
+  [UniqueIndex('KeyHiPro01', 'ANIOH;MESH;CODPRO')]   // Confirmar
+  THiProduc = class
+  public
+    [UniqueKey][NotNull] ANIOH: Integer;
+    [UniqueKey][NotNull] MESH: Integer;
+    [UniqueKey][NotNull][Size(15)] CODPRO: string;
+
+    [Decimal(17, 3)] CANINVINICIAL: TCantidad;
+    [Decimal(17, 2)] MONTOINVINICIAL: TMonto;
+    [Decimal(17, 3)] CANCOMPRA: TCantidad;
+    [Decimal(17, 2)] MONTOCOMPRA: TMonto;
+    [Decimal(17, 3)] CANVENTA: TCantidad;
+    [Decimal(17, 2)] MONTOVENTA: TMonto;
+    [Decimal(17, 3)] CANDEVCOMPRA: TCantidad;
+    [Decimal(17, 2)] MONTODEVCOMPRA: TMonto;
+    [Decimal(17, 3)] CANDEVVENTA: TCantidad;
+    [Decimal(17, 2)] MONTODEVVENTA: TMonto;
+    [Decimal(17, 3)] CANCARGOS: TCantidad;
+    [Decimal(17, 2)] MONTOCARGOS: TMonto;
+    [Decimal(17, 3)] CANDESCARGOS: TCantidad;
+    [Decimal(17, 2)] MONTODESCARGOS: TMonto;
+    [Decimal(17, 3)] CANAJUSTESP: TCantidad;
+    [Decimal(17, 2)] MONTOAJUSTESP: TMonto;
+    [Decimal(17, 3)] CANAJUSTESN: TCantidad;
+    [Decimal(17, 2)] MONTOAJUSTESN: TMonto;
+
+    // ---- Contrapartes de nota de entrega ----
+    [Decimal(17, 3)] CANNECOMPRA: TCantidad;
+    [Decimal(17, 2)] MONTONECOMPRA: TMonto;
+    [Decimal(17, 3)] CANNEDEVCOMPRA: TCantidad;
+    [Decimal(17, 2)] MONTONEDEVCOMPRA: TMonto;
+    [Decimal(17, 3)] CANNEVENTA: TCantidad;
+    [Decimal(17, 2)] MONTONEVENTA: TMonto;
+    [Decimal(17, 3)] CANNEDEVVENTA: TCantidad;
+    [Decimal(17, 2)] MONTONEDEVVENTA: TMonto;
+  end;
+
+implementation
+
+end.

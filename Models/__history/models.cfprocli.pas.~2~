@@ -1,0 +1,108 @@
+unit models.cfprocli;
+
+interface
+
+uses
+  attributes, models.types;
+
+type
+  // PROveedores + CLIentes en una sola tabla.
+  // TIPREG = 1 -> cliente/ventas ; TIPREG = 0 -> proveedor/compras.
+  // TODA consulta del API debe filtrar TIPREG = 1.
+  [Table('cfprocli')]
+  [UniqueIndex('KeyPCl01', 'TIPREG;CODIGO')]
+  TCFProCli = class
+  public
+    [UniqueKey][NotNull] TIPREG: TIndicador;
+    [UniqueKey][NotNull][Size(25)] CODIGO: string;
+
+    [Indexed][Size(100)] NOMBRE: string;
+    [Size(40)] REPRESEN: string;
+    [Size(120)] DIRECC1: string;
+    [Size(120)] DIRECC2: string;
+    [Size(40)] NUMTEL: string;
+    [Indexed][Size(25)] RIF: string;
+    [Size(25)] NIT: string;
+
+    PRECIO: TIndicador;                 // lista de precio aplicable (1..3)
+    FECHA1: TFechaInt;                  // ult. movimiento
+    FECHA2: TFechaInt;                  // ult. pago
+    [Size(10)] FECHA1S: string;
+    [Size(10)] FECHA2S: string;
+
+    [Decimal(17, 2)] MONTODEB: TMonto;
+    [Decimal(17, 2)] MONTOCRE: TMonto;
+    [Decimal(17, 2)] LIMITECRE: TMonto;
+    [Indexed][Size(15)] CODVEN: string;
+    DIASBLOQUEO: Integer;
+    [Size(19)] TIPOCLI: string;         // texto libre; VACIO en esta instalacion
+    DIASCRE: Integer;
+    [Decimal(7, 2)] PORRET: TPorcentaje;
+    [Size(19)] TIPOPRO: string;
+    [Decimal(17, 2)] ANTICIPOS: TMonto;
+    [Size(15)] CODZON: string;
+    [Size(40)] NUMFAX: string;
+    [Size(60)] DIRCORREO: string;
+    [Size(15)] CLASE: string;
+    PERCREDITO: TIndicador;
+    [Size(20)] CUENTACON: string;
+    [Size(20)] CUENTATER: string;
+    CALCIMPUESTO: TIndicador;
+    [Size(120)] DIRECCALTERNA1: string;
+    [Size(120)] DIRECCALTERNA2: string;
+    [Decimal(5, 2)] PORRETIMP: TPorcentaje;
+    CONESPECIAL: TIndicador;            // contribuyente especial (retiene IVA)
+    TIPOPROVEEDOR: TIndicador;
+    [Decimal(7, 2)] PORMAXDESPAR: TPorcentaje;
+    [Decimal(7, 2)] PORMAXDESGLO: TPorcentaje;
+
+    // ---- Bloque clinico/gimnasio: irrelevante para ventas, se escribe en 0 ----
+    SERFUMA: TIndicador;
+    SERALERGIAS: TIndicador;
+    SERDIABETES: TIndicador;
+    SERSIDA: TIndicador;
+    SERTENSIONBAJA: TIndicador;
+    SERTENSIONALTA: TIndicador;
+    SERASMA: TIndicador;
+    SERPROBLEMASRENALES: TIndicador;
+    SERINFARTO: TIndicador;
+    SEREPILEPSIA: TIndicador;
+    SERCANCER: TIndicador;
+    [Size(1)] SEROTROS1: string;
+    [Size(1)] SEROTROS2: string;
+
+    FECHANAC: TFechaInt;
+    [Size(10)] SEXO: string;
+    [Size(100)] FOTO: string;
+    [Size(10)] PREFIJO_MOVIL: string;
+    [Size(20)] NUMERO_MOVIL: string;
+    MARKAR: TIndicador;
+    [Size(40)] NUMTELCONTACTO: string;
+    [Size(40)] NOMBREGERENTE: string;
+    [Size(40)] NUMTELGERENTE: string;
+    FECNACCONTACTO: TFechaInt;
+    FECNACGERENTE: TFechaInt;
+    [Size(40)] TIPOCOMERCIO: string;
+    [Size(60)] MENSAFACTURAR: string;
+    [Size(40)] NOMBREEGEO1: string;
+    [Size(40)] NOMBREEGEO2: string;
+    [Size(40)] NOMBREEGEO3: string;
+    [Size(40)] NOMBRE1: string;
+    [Size(40)] NOMBRE2: string;
+    [Size(40)] APELLIDO1: string;
+    [Size(40)] APELLIDO2: string;
+    [Size(10)] CODIGOPOSTAL: string;
+    [Size(40)] NOMBREBAREMO: string;
+    APLICADSTOFAC: TIndicador;
+    TIPOAFILIADO: TIndicador;
+    [Size(20)] CODIGOPAGADOR: string;
+    SITAFILIADO: TIndicador;
+    INTEGRADO: TIndicador;
+    [Decimal(17, 2)] VALORIMPUESTOCR: TMonto;
+    [Size(40)] NOMBREIMPUESTOCR: string;
+    [Size(10)] CODIGOIMPUESTOCR: string;
+  end;
+
+implementation
+
+end.

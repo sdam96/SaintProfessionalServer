@@ -1,0 +1,24 @@
+unit models.ivserial;
+
+interface
+
+uses
+  attributes, models.types;
+
+type
+  // Seriales disponibles. Vender un producto con USASERIAL=1 BORRA la fila
+  // del serial entregado. Saint NO escribe nada en dcserial: no queda rastro
+  // de que serial salio en que documento.
+  [Table('ivserial')]
+  [UniqueIndex('KeySer01', 'CODIGO;CODPRO;SERIAL')]   // inferido
+  TIVSerial = class
+  public
+    [UniqueKey][NotNull][Size(15)] CODIGO: string;    // deposito
+    [UniqueKey][NotNull][Size(15)] CODPRO: string;
+    [UniqueKey][NotNull][Size(30)] SERIAL: string;
+    MARCA: TIndicador;
+  end;
+
+implementation
+
+end.

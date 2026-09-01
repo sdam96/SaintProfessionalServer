@@ -1,0 +1,13 @@
+unit models.dcheader;
+
+interface
+
+type
+  SizeAttribute = class(TCustomAttribute)
+  private
+  public
+  end;
+
+implementation
+
+end.

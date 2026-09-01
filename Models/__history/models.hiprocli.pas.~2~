@@ -1,0 +1,33 @@
+unit models.hiprocli;
+
+interface
+
+uses
+  attributes, models.types;
+
+type
+  // Historico mensual por cliente/proveedor. TIPREG=1 ventas, 0 compras.
+  // CONTADO y COBPAG suman el total SIN IVA. IMPUESTO no acumula de forma
+  // consistente entre contado y credito: pendiente de determinar.
+  [Table('hiprocli')]
+  [UniqueIndex('KeyHiCli01', 'ANIOH;MESH;TIPREG;CODIGO')]   // inferido
+  THiProCli = class
+  public
+    [UniqueKey][NotNull] ANIOH: Integer;
+    [UniqueKey][NotNull] MESH: Integer;
+    [UniqueKey][NotNull] TIPREG: TIndicador;
+    [UniqueKey][NotNull][Size(25)] CODIGO: string;
+
+    [Decimal(17, 2)] CONTADO: TMonto;
+    [Decimal(17, 2)] CREDITO: TMonto;
+    [Decimal(17, 2)] IMPUESTO: TMonto;
+    [Decimal(17, 2)] COBPAG: TMonto;
+    [Decimal(17, 2)] DESCUENTOS: TMonto;
+    [Decimal(17, 2)] DEVOLUCIONES: TMonto;
+    [Decimal(17, 2)] COSTOSMERCANCIA: TMonto;      // puede quedar NEGATIVO
+    [Decimal(17, 2)] COSTOSMERCANCIADEV: TMonto;
+  end;
+
+implementation
+
+end.
