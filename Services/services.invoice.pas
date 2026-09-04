@@ -5,9 +5,9 @@ interface
 uses
   System.SysUtils, System.Math, System.Generics.Collections,
   models.types, models.dcheader, models.dcdetall, models.cjdetall,
-  models.igtfrecords, models.movprod, models.hiproduc, models.hiprocli,
-  models.hiresume, models.ivproser, models.cfprocli, models.cfparame,
-  dto.invoice, services.connection, services.counters, services.control;
+  models.igtfrecords, models.ivproser, models.cfprocli, models.cfparame,
+  dto.invoice, data.connection, services.connection, services.counters,
+  services.control, data.mapper;
 
 type
   EInvoiceError = class(Exception);
@@ -26,12 +26,15 @@ type
   private
     FSession: ISaintSession;
     FAllocator: ICounterAllocator;
+    FSettings: TSaintSettings;
     FParams: TParameters;
 
+    procedure LoadParameters;
     function LoadCustomer(const ACode: string): TParty;
     function LoadProduct(const ACode: string): TProduct;
     function FormatDocumentNumber(ANumber: Integer): string;
     function FormatPaymentCaption(const AAmount: TAmount): string;
+    function AppliesIGTF(ARequest: TInvoiceRequest): Boolean;
 
     procedure ValidateRequest(ARequest: TInvoiceRequest);
     procedure UpdateStock(AProduct: TProduct; const AQty: TQuantity;
@@ -46,7 +49,8 @@ type
     procedure UpdateCustomerBalance(ACustomer: TParty; ADate: TClarionDate;
       const ATotal: TAmount);
   public
-    constructor Create(const ASession: ISaintSession);
+    constructor Create(const ASession: ISaintSession;
+      const ASettings: TSaintSettings);
     destructor Destroy; override;
     function Issue(ARequest: TInvoiceRequest): TInvoiceResult;
   end;
@@ -58,7 +62,6 @@ uses
 
 const
   TIPREG_SALES = 1;
-  IGTF_RATE: TRate = 3.00;
   // Literal values Saint expects to find in these columns; they are data,
   // not user-facing text.
   SALES_MODULE = 'Ventas';
@@ -76,10 +79,12 @@ begin
   Result := RoundTo(AValue, -2);
 end;
 
-constructor TInvoiceService.Create(const ASession: ISaintSession);
+constructor TInvoiceService.Create(const ASession: ISaintSession;
+  const ASettings: TSaintSettings);
 begin
   inherited Create;
   FSession := ASession;
+  FSettings := ASettings;
   FAllocator := TCounterAllocator.Create(ASession);
   FParams := nil;
 end;
@@ -88,6 +93,24 @@ destructor TInvoiceService.Destroy;
 begin
   FParams.Free;
   inherited;
+end;
+
+procedure TInvoiceService.LoadParameters;
+begin
+  if FParams <> nil then
+    Exit;
+  FParams := TParameters.Create;
+  try
+    // TParameters maps only the columns we read, so this SELECT touches
+    // those and nothing else.
+    if not TEntityMapper.SelectOne(FSession, FParams, 'cfparame',
+         'CONTROL = 1', []) then
+      raise EInvoiceError.Create(
+        'No se encontró la configuración de la empresa.');
+  except
+    FreeAndNil(FParams);
+    raise;
+  end;
 end;
 
 function TInvoiceService.FormatDocumentNumber(ANumber: Integer): string;
@@ -100,6 +123,13 @@ begin
   // dcheader.DESCRIP2 on a PAGxFAC: 'Por' plus the amount right-aligned in
   // 13 characters. Observed: 'Por     2,560.29' and 'Por    10,071.45'.
   Result := 'Por' + Format('%13s', [FormatFloat('#,##0.00', AAmount)]);
+end;
+
+// IGTF applies only when the company has it enabled in Professional.ini and
+// the customer pays in foreign currency.
+function TInvoiceService.AppliesIGTF(ARequest: TInvoiceRequest): Boolean;
+begin
+  Result := FSettings.UsesIGTF and ARequest.PaidInForeignCurrency;
 end;
 
 procedure TInvoiceService.ValidateRequest(ARequest: TInvoiceRequest);
@@ -133,12 +163,14 @@ var
   DocNumber: string;
   Header, Payment: TDCHeader;
   Line: TDCDetail;
+  Lines: TObjectList<TDCDetail>;
   Cash: TCashDetail;
   Igtf: TIGTFRecord;
   Product: TProduct;
   Req: TInvoiceLineRequest;
   Totals: TDocumentTotals;
   UnitPrice, LineBase, LineTax: TAmount;
+  ControlsNeeded: Integer;
   Year, Month, Day: Word;
 begin
   ValidateRequest(ARequest);
@@ -147,20 +179,32 @@ begin
     raise EInvoiceError.Create(
       'La facturación a crédito aún no está disponible.');
 
+  LoadParameters;
+
   IssueDate := DateToClarion(Date);
   IssueTime := CurrentClarionTime;
   DateText := ClarionToStr(IssueDate);
   DecodeDate(Date, Year, Month, Day);
 
+  Header := nil;
+  Payment := nil;
+  Cash := nil;
+  Igtf := nil;
   Customer := LoadCustomer(ARequest.CustomerCode);
   try
-    // Reserve: 1 header + N lines + 1 cash row + 1 payment.
-    // Short transaction, already committed when this returns.
+    // Reserve: 1 header + N lines + 1 payment, plus 1 cash row when the
+    // company has the cash register module on.
+    ControlsNeeded := ARequest.Lines.Count + 2;
+    if FSettings.UsesCashRegister then
+      Inc(ControlsNeeded);
+
     InvoiceNo := FAllocator.AllocateInvoiceNumber;
-    Block := FAllocator.AllocateControlBlock(ARequest.Lines.Count + 3);
+    Block := FAllocator.AllocateControlBlock(ControlsNeeded);
     DocNumber := FormatDocumentNumber(InvoiceNo);
 
-    Generator := TControlGenerator.Create(IssueDate, IssueTime);
+    Generator := TControlGenerator.Create(IssueDate, IssueTime,
+      FSettings.Station);
+    Lines := TObjectList<TDCDetail>.Create(True);
     try
       FSession.BeginTx;
       try
@@ -204,6 +248,9 @@ begin
 
         FillChar(Totals, SizeOf(Totals), 0);
 
+        // Lines are built first because the header totals depend on them,
+        // then everything is written. There are no foreign keys, so the
+        // write order is a matter of readability, not integrity.
         for Req in ARequest.Lines do
         begin
           Product := LoadProduct(Req.ProductCode);
@@ -219,12 +266,15 @@ begin
               end;
 
             LineBase := Round2(UnitPrice * Req.Quantity);
+            // The rate comes from the product, not from the IVAA/IVAB/IVAC
+            // keys in the ini file: that is what the snapshots show.
             if Product.EXENTO <> 0 then
               LineTax := 0
             else
               LineTax := Round2(LineBase * Product.IMPPOR / 100);
 
             Line := TDCDetail.Create;
+            Lines.Add(Line);
             Line.CONTROL := Header.CONTROL;
             Line.FECHORA := Generator.NewControl(Block);
             Line.FHPRODBASE := Line.FECHORA;   // observed: always identical
@@ -268,8 +318,6 @@ begin
             Line.ORIGEN := 0;
             Line.CODIMPUESTO1 := Product.CODIMPUESTO1;
 
-            // TODO: persist Line through the ORM
-
             Totals.Gross := Totals.Gross + LineBase;
             Totals.Tax := Totals.Tax + LineTax;
             Totals.Cost := Totals.Cost + Line.MONTOCOS;
@@ -285,8 +333,9 @@ begin
         end;
 
         Totals.Subtotal := Totals.Gross - Totals.Discount;
-        if ARequest.PaidInForeignCurrency then
-          Totals.IGTF := Round2((Totals.Subtotal + Totals.Tax) * IGTF_RATE / 100)
+        if AppliesIGTF(ARequest) then
+          Totals.IGTF := Round2(
+            (Totals.Subtotal + Totals.Tax) * FSettings.IGTFRate / 100)
         else
           Totals.IGTF := 0;
         Totals.Total := Round2(Totals.Subtotal + Totals.Tax + Totals.IGTF);
@@ -306,23 +355,30 @@ begin
         Header.MONTOPAG := 0;
         Header.MONTOCOS := Totals.Cost;
         Header.BASEIMPONIBLEIVA := 0;          // observed 0 on cash sales
-        // TODO: persist Header through the ORM
 
-        Cash := TCashDetail.Create;
-        Cash.CONTROL := Generator.NewControl(Block);
-        Cash.CODCAJA := ARequest.CashRegisterCode;
-        Cash.NUMREF := DocNumber + 'R';
-        Cash.NUMDOC := DocNumber;
-        Cash.FECEMIS := IssueDate;
-        Cash.FECEMISS := '';                   // Saint leaves this empty here
-        Cash.MONTOCOBRADO := Totals.Total;
-        Cash.TIPOCOBRO := 0;                   // cash
-        Cash.HORA := IssueTime;
-        Cash.TIPTRAN := 'FAC';
-        Cash.CODIGO := Customer.CODIGO;
-        Cash.DESCRIP1 := 'Factura ' + DocNumber;
-        Cash.ESTADOCAJA := 0;
-        // TODO: persist Cash through the ORM
+        TEntityMapper.Insert(FSession, Header, 'dcheader');
+        for Line in Lines do
+          TEntityMapper.Insert(FSession, Line, 'dcdetall');
+
+        // cjdetall is written only when the cash register module is on.
+        if FSettings.UsesCashRegister then
+        begin
+          Cash := TCashDetail.Create;
+          Cash.CONTROL := Generator.NewControl(Block);
+          Cash.CODCAJA := ARequest.CashRegisterCode;
+          Cash.NUMREF := DocNumber + 'R';
+          Cash.NUMDOC := DocNumber;
+          Cash.FECEMIS := IssueDate;
+          Cash.FECEMISS := '';                 // Saint leaves this empty here
+          Cash.MONTOCOBRADO := Totals.Total;
+          Cash.TIPOCOBRO := 0;                 // cash
+          Cash.HORA := IssueTime;
+          Cash.TIPTRAN := 'FAC';
+          Cash.CODIGO := Customer.CODIGO;
+          Cash.DESCRIP1 := 'Factura ' + DocNumber;
+          Cash.ESTADOCAJA := 0;
+          TEntityMapper.Insert(FSession, Cash, 'cjdetall');
+        end;
 
         Payment := TDCHeader.Create;
         Payment.CONTROL := Generator.NewControl(Block);
@@ -363,21 +419,21 @@ begin
         Payment.TIPOFACTURA := '';
         Payment.FECULTIMOPAGO := IssueDate;
         Payment.COMISV := 0;
-        // TODO: persist Payment through the ORM
+        TEntityMapper.Insert(FSession, Payment, 'dcheader');
 
         Igtf := TIGTFRecord.Create;
         Igtf.dcheaderCONTROL := Header.CONTROL;
         Igtf.baseImponibleGeneral := Totals.Gross;
-        Igtf.porcentajeImpuestoIGTF := '3';    // TEXT, not numeric
+        Igtf.porcentajeImpuestoIGTF := FormatFloat('0', FSettings.IGTFRate);
         Igtf.DESCRIPCION := 'Dolar';
         // On invoice 000011, IGTFEFECTIVOMONEDALOCAL = 2558.50 while
         // MONTOTOT = 2560.29. The 1.79 gap is unexplained. We write the
         // total and compare during the live test.
-        if ARequest.PaidInForeignCurrency then
+        if AppliesIGTF(ARequest) then
           Igtf.IGTFEFECTIVOMONEDALOCAL := Totals.Total
         else
           Igtf.IGTFEFECTIVOMONEDALOCAL := 0;
-        // TODO: persist Igtf through the ORM
+        TEntityMapper.Insert(FSession, Igtf, 'igtfrecords');
 
         AccumulateSalesHistory(Customer.CODIGO, Year, Month,
           Totals.Total - Totals.Tax);
@@ -387,7 +443,10 @@ begin
 
         Result.InvoiceControl := Header.CONTROL;
         Result.PaymentControl := Payment.CONTROL;
-        Result.CashControl := Cash.CONTROL;
+        if Cash <> nil then
+          Result.CashControl := Cash.CONTROL
+        else
+          Result.CashControl := '';
         Result.InvoiceNumber := DocNumber;
         Result.GrossAmount := Totals.Gross;
         Result.TaxAmount := Totals.Tax;
@@ -399,9 +458,14 @@ begin
         raise;
       end;
     finally
+      Lines.Free;
       Generator.Free;
     end;
   finally
+    Igtf.Free;
+    Cash.Free;
+    Payment.Free;
+    Header.Free;
     Customer.Free;
   end;
 end;
@@ -489,16 +553,40 @@ end;
 
 function TInvoiceService.LoadCustomer(const ACode: string): TParty;
 begin
-  // TODO: load through the ORM, ALWAYS filtering TIPREG = 1. Without that
-  // filter an invoice could be issued against a supplier sharing the code.
-  raise ENotImplemented.Create('LoadCustomer: ORM binding pending.');
+  Result := TParty.Create;
+  try
+    // TIPREG = 1 is mandatory. Without it an invoice could be issued
+    // against a supplier that happens to share the same code.
+    if not TEntityMapper.SelectOne(FSession, Result, 'cfprocli',
+         'TIPREG = 1 AND CODIGO = :p0', [ACode]) then
+      raise EInvoiceError.CreateFmt('No existe el cliente %s.', [ACode]);
+  except
+    Result.Free;
+    raise;
+  end;
 end;
 
 function TInvoiceService.LoadProduct(const ACode: string): TProduct;
 begin
-  // TODO: load through the ORM. Check ACTIVO and, if USASERIAL = 1, require
-  // serial numbers.
-  raise ENotImplemented.Create('LoadProduct: ORM binding pending.');
+  Result := TProduct.Create;
+  try
+    if not TEntityMapper.SelectOne(FSession, Result, 'ivproser',
+         'CODPRO = :p0', [ACode]) then
+      raise EInvoiceError.CreateFmt('No existe el producto %s.', [ACode]);
+
+    // ACTIVO is NOT checked: product 010001 is sold repeatedly across the
+    // snapshots while carrying ACTIVO = 0, so the column does not mean what
+    // its name suggests in this installation.
+
+    // Selling a serialised product deletes rows from ivserial and leaves no
+    // trace of which serial left on which document. Out of scope for now.
+    if Result.USASERIAL <> 0 then
+      raise EInvoiceError.CreateFmt(
+        'El producto %s maneja seriales y aún no está soportado.', [ACode]);
+  except
+    Result.Free;
+    raise;
+  end;
 end;
 
 end.

@@ -17,6 +17,7 @@ type
     function InTransaction: Boolean;
     function ScalarInt(const ASQL: string; const AParams: array of Variant): Int64;
     procedure Execute(const ASQL: string; const AParams: array of Variant);
+    function OpenQuery(const ASQL: string; const AParams: array of Variant): TFDQuery;
   end;
 
   TSaintSession = class(TInterfacedObject, ISaintSession)
@@ -34,6 +35,7 @@ type
     function InTransaction: Boolean;
     function ScalarInt(const ASQL: string; const AParams: array of Variant): Int64;
     procedure Execute(const ASQL: string; const AParams: array of Variant);
+    function OpenQuery(const ASql: string; const AParams: array of Variant): TFDQuery;
   end;
 
 implementation
@@ -104,6 +106,25 @@ end;
 function TSaintSession.InTransaction: Boolean;
 begin
   Result := FConn.InTransaction;
+end;
+
+function TSaintSession.OpenQuery(const ASql: string;
+  const AParams: array of Variant): TFDQuery;
+var
+  I: Integer;
+begin
+  Result := TFDQuery.Create(nil);
+  try
+    Result.Connection := FConn;
+    Result.SQL.Text := ASql;
+
+    for I := 0 to High(AParams) do Result.Params[I].Value := AParams[I];
+
+    Result.Open;
+  except
+    Result.Free;
+    raise;
+  end;
 end;
 
 function TSaintSession.ScalarInt(const ASQL: string;
